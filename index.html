@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artificial Life Evolution Simulator</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a, #1a1a2e);
+            color: #e0e0e0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+
+        .simulation-area {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            height: fit-content;
+        }
+
+        canvas {
+            width: 100%;
+            height: 600px;
+            border-radius: 10px;
+            background: radial-gradient(circle at center, #001122, #000511);
+            cursor: crosshair;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #64ffda, #1de9b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        h2 {
+            color: #64ffda;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border-left: 3px solid #64ffda;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b0b0b0;
+            font-size: 0.9rem;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            margin-bottom: 10px;
+            accent-color: #64ffda;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            margin: 5px 0;
+            background: linear-gradient(45deg, #1de9b6, #64ffda);
+            border: none;
+            border-radius: 8px;
+            color: #000;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(29, 233, 182, 0.3);
+        }
+
+        button:disabled {
+            background: #333;
+            color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .stats {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .stat-value {
+            color: #64ffda;
+            font-weight: 600;
+        }
+
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.03);
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧬 Artificial Life Evolution Simulator</h1>
+    
+    <div class="container">
+        <div class="simulation-area">
+            <canvas id="canvas"></canvas>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff6b6b;"></div>
+                    <span>Single Cell</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4ecdc4;"></div>
+                    <span>Small Colony (2-4 cells)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #45b7d1;"></div>
+                    <span>Medium Colony (5-10 cells)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #96ceb4;"></div>
+                    <span>Large Colony (10+ cells)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #feca57;"></div>
+                    <span>Nutrients</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h2>🎛️ Environment Controls</h2>
+            
+            <div class="control-group">
+                <label>Mutation Rate: <span id="mutationDisplay">1%</span></label>
+                <input type="range" id="mutationRate" min="0" max="5" step="0.1" value="1">
+                
+                <label>Selection Pressure: <span id="pressureDisplay">Medium</span></label>
+                <input type="range" id="selectionPressure" min="1" max="10" step="1" value="5">
+                
+                <label>Nutrient Density: <span id="nutrientDisplay">Medium</span></label>
+                <input type="range" id="nutrientDensity" min="1" max="10" step="1" value="5">
+            </div>
+
+            <button id="startBtn">▶️ Start Evolution</button>
+            <button id="pauseBtn" disabled>⏸️ Pause</button>
+            <button id="resetBtn">🔄 Reset Environment</button>
+            <button id="addPredatorBtn">🦈 Add Predator Pressure</button>
+
+            <div class="stats">
+                <h2>📊 Population Stats</h2>
+                <div class="stat-item">
+                    <span>Generation:</span>
+                    <span class="stat-value" id="generation">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Total Organisms:</span>
+                    <span class="stat-value" id="totalOrganisms">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Single Cells:</span>
+                    <span class="stat-value" id="singleCells">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Small Colonies:</span>
+                    <span class="stat-value" id="smallColonies">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Medium Colonies:</span>
+                    <span class="stat-value" id="mediumColonies">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Large Colonies:</span>
+                    <span class="stat-value" id="largeColonies">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>Avg. Cooperation:</span>
+                    <span class="stat-value" id="avgCooperation">0%</span>
+                </div>
+            </div>
+
+            <div class="info-panel">
+                <h2>ℹ️ How It Works</h2>
+                <p><strong>Evolution Mechanics:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Organisms start as single cells</li>
+                    <li>Cooperation genes allow cell clustering</li>
+                    <li>Larger colonies survive predation better</li>
+                    <li>Nutrient sharing improves survival</li>
+                    <li>Mutations drive evolutionary change</li>
+                </ul>
+                
+                <p><strong>Environmental Pressures:</strong></p>
+                <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>Predators target single cells</li>
+                    <li>Nutrient scarcity favors cooperation</li>
+                    <li>Selection pressure affects survival rates</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class Organism {
+            constructor(x, y, genes = null) {
+                this.x = x;
+                this.y = y;
+                this.energy = 100;
+                this.age = 0;
+                this.size = 3;
+                this.colonySize = 1;
+                this.colonyMembers = [this];
+                
+                // Genetic traits
+                this.genes = genes || {
+                    cooperation: Math.random(), // Tendency to form colonies
+                    metabolism: 0.5 + Math.random() * 0.5, // Energy efficiency
+                    reproduction: 0.3 + Math.random() * 0.4, // Reproduction threshold
+                    mobility: Math.random() // Movement speed
+                };
+                
+                this.vx = (Math.random() - 0.5) * 2;
+                this.vy = (Math.random() - 0.5) * 2;
+                this.reproduced = false;
+            }
+
+            update(organisms, nutrients, predators) {
+                this.age++;
+                this.energy -= this.genes.metabolism;
+                
+                // Movement
+                this.vx += (Math.random() - 0.5) * 0.1;
+                this.vy += (Math.random() - 0.5) * 0.1;
+                this.vx *= 0.98;
+                this.vy *= 0.98;
+                
+                this.x += this.vx * this.genes.mobility;
+                this.y += this.vy * this.genes.mobility;
+                
+                // Boundary conditions
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+                this.x = Math.max(0, Math.min(canvas.width, this.x));
+                this.y = Math.max(0, Math.min(canvas.height, this.y));
+                
+                // Look for nutrients
+                this.seekNutrients(nutrients);
+                
+                // Colony formation based on cooperation gene
+                if (this.genes.cooperation > 0.6 && this.colonySize < 15) {
+                    this.seekColonyMembers(organisms);
+                }
+                
+                // Predator avoidance
+                this.avoidPredators(predators);
+                
+                return this.energy > 0 && this.age < 1000;
+            }
+
+            seekNutrients(nutrients) {
+                for (let i = nutrients.length - 1; i >= 0; i--) {
+                    const nutrient = nutrients[i];
+                    const dist = Math.sqrt((this.x - nutrient.x) ** 2 + (this.y - nutrient.y) ** 2);
+                    
+                    if (dist < 15) {
+                        this.energy += 30;
+                        // Share energy in colonies
+                        if (this.colonySize > 1) {
+                            const sharedEnergy = 30 / this.colonySize;
+                            this.colonyMembers.forEach(member => {
+                                if (member !== this) member.energy += sharedEnergy * 0.5;
+                            });
+                        }
+                        nutrients.splice(i, 1);
+                        break;
+                    } else if (dist < 50) {
+                        this.vx += (nutrient.x - this.x) / dist * 0.02;
+                        this.vy += (nutrient.y - this.y) / dist * 0.02;
+                    }
+                }
+            }
+
+            seekColonyMembers(organisms) {
+                for (const other of organisms) {
+                    if (other !== this && other.colonySize < 15) {
+                        const dist = Math.sqrt((this.x - other.x) ** 2 + (this.y - other.y) ** 2);
+                        
+                        if (dist < 20 && Math.random() < this.genes.cooperation * 0.1) {
+                            // Form colony
+                            if (!this.colonyMembers.includes(other)) {
+                                this.colonyMembers.push(other);
+                                other.colonyMembers.push(this);
+                                this.colonySize = this.colonyMembers.length;
+                                other.colonySize = other.colonyMembers.length;
+                            }
+                        }
+                    }
+                }
+            }
+
+            avoidPredators(predators) {
+                for (const predator of predators) {
+                    const dist = Math.sqrt((this.x - predator.x) ** 2 + (this.y - predator.y) ** 2);
+                    
+                    if (dist < 50) {
+                        // Smaller colonies are more vulnerable
+                        const vulnerability = 1 / this.colonySize;
+                        if (Math.random() < vulnerability * 0.02) {
+                            this.energy -= 50; // Predation damage
+                        }
+                        
+                        // Flee from predator
+                        this.vx -= (predator.x - this.x) / dist * 0.1;
+                        this.vy -= (predator.y - this.y) / dist * 0.1;
+                    }
+                }
+            }
+
+            canReproduce() {
+                return this.energy > 150 && !this.reproduced && Math.random() < this.genes.reproduction;
+            }
+
+            reproduce() {
+                this.energy *= 0.6;
+                this.reproduced = true;
+                
+                // Mutation
+                const mutatedGenes = {};
+                for (const [key, value] of Object.entries(this.genes)) {
+                    mutatedGenes[key] = Math.max(0, Math.min(1, 
+                        value + (Math.random() - 0.5) * mutationRate
+                    ));
+                }
+                
+                return new Organism(
+                    this.x + (Math.random() - 0.5) * 20,
+                    this.y + (Math.random() - 0.5) * 20,
+                    mutatedGenes
+                );
+            }
+
+            draw(ctx) {
+                const colors = {
+                    1: '#ff6b6b',      // Single cell - red
+                    2: '#4ecdc4',      // Small colony - teal
+                    5: '#45b7d1',      // Medium colony - blue
+                    10: '#96ceb4'      // Large colony - green
+                };
+                
+                let color = colors[1];
+                if (this.colonySize >= 10) color = colors[10];
+                else if (this.colonySize >= 5) color = colors[5];
+                else if (this.colonySize >= 2) color = colors[2];
+                
+                const size = 3 + Math.log(this.colonySize);
+                
+                ctx.fillStyle = color;
+                ctx.globalAlpha = 0.8;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw connections for colonies
+                if (this.colonySize > 1) {
+                    ctx.strokeStyle = color;
+                    ctx.globalAlpha = 0.3;
+                    ctx.lineWidth = 1;
+                    for (const member of this.colonyMembers) {
+                        if (member !== this) {
+                            ctx.beginPath();
+                            ctx.moveTo(this.x, this.y);
+                            ctx.lineTo(member.x, member.y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+                
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        class Nutrient {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = 2 + Math.random() * 3;
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = '#feca57';
+                ctx.globalAlpha = 0.7;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        }
+
+        class Predator {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.size = 8;
+                this.energy = 200;
+            }
+
+            update(organisms) {
+                // Hunt nearest organism
+                let nearest = null;
+                let nearestDist = Infinity;
+                
+                for (const org of organisms) {
+                    const dist = Math.sqrt((this.x - org.x) ** 2 + (this.y - org.y) ** 2);
+                    if (dist < nearestDist) {
+                        nearest = org;
+                        nearestDist = dist;
+                    }
+                }
+
+                if (nearest && nearestDist < 100) {
+                    this.vx += (nearest.x - this.x) / nearestDist * 0.05;
+                    this.vy += (nearest.y - this.y) / nearestDist * 0.05;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                
+                // Boundary conditions
+                if (this.x < 0 || this.x > canvas.width) this.vx *= -1;
+                if (this.y < 0 || this.y > canvas.height) this.vy *= -1;
+                this.x = Math.max(0, Math.min(canvas.width, this.x));
+                this.y = Math.max(0, Math.min(canvas.height, this.y));
+                
+                this.energy--;
+                return this.energy > 0;
+            }
+
+            draw(ctx) {
+                ctx.fillStyle = '#e74c3c';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Menacing glow
+                ctx.shadowColor = '#e74c3c';
+                ctx.shadowBlur = 10;
+                ctx.fill();
+                ctx.shadowBlur = 0;
+            }
+        }
+
+        // Global variables
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        let organisms = [];
+        let nutrients = [];
+        let predators = [];
+        let generation = 0;
+        let running = false;
+        let mutationRate = 0.01;
+        let selectionPressure = 5;
+        let nutrientDensity = 5;
+
+        // Set canvas size
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // Initialize simulation
+        function initSimulation() {
+            organisms = [];
+            nutrients = [];
+            predators = [];
+            generation = 0;
+            
+            // Create initial organisms
+            for (let i = 0; i < 50; i++) {
+                organisms.push(new Organism(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+            
+            spawnNutrients();
+        }
+
+        function spawnNutrients() {
+            const count = Math.floor(nutrientDensity * 10);
+            for (let i = 0; i < count; i++) {
+                nutrients.push(new Nutrient(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        }
+
+        function update() {
+            if (!running) return;
+            
+            // Update organisms
+            for (let i = organisms.length - 1; i >= 0; i--) {
+                if (!organisms[i].update(organisms, nutrients, predators)) {
+                    organisms.splice(i, 1);
+                }
+            }
+            
+            // Update predators
+            for (let i = predators.length - 1; i >= 0; i--) {
+                if (!predators[i].update(organisms)) {
+                    predators.splice(i, 1);
+                }
+            }
+            
+            // Reproduction
+            const newOrganisms = [];
+            for (const org of organisms) {
+                if (org.canReproduce()) {
+                    newOrganisms.push(org.reproduce());
+                }
+            }
+            organisms.push(...newOrganisms);
+            
+            // Selection pressure - remove weakest organisms
+            if (organisms.length > 200) {
+                organisms.sort((a, b) => b.energy - a.energy);
+                const survivorCount = Math.floor(organisms.length * (1 - selectionPressure / 20));
+                organisms = organisms.slice(0, survivorCount);
+                generation++;
+            }
+            
+            // Spawn nutrients periodically
+            if (Math.random() < 0.1) {
+                spawnNutrients();
+            }
+            
+            updateStats();
+        }
+
+        function draw() {
+            ctx.fillStyle = 'rgba(0, 5, 17, 0.1)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw nutrients
+            nutrients.forEach(nutrient => nutrient.draw(ctx));
+            
+            // Draw predators
+            predators.forEach(predator => predator.draw(ctx));
+            
+            // Draw organisms
+            organisms.forEach(organism => organism.draw(ctx));
+        }
+
+        function updateStats() {
+            const stats = {
+                single: 0,
+                small: 0,
+                medium: 0,
+                large: 0,
+                totalCooperation: 0
+            };
+
+            organisms.forEach(org => {
+                if (org.colonySize === 1) stats.single++;
+                else if (org.colonySize < 5) stats.small++;
+                else if (org.colonySize < 10) stats.medium++;
+                else stats.large++;
+                
+                stats.totalCooperation += org.genes.cooperation;
+            });
+
+            document.getElementById('generation').textContent = generation;
+            document.getElementById('totalOrganisms').textContent = organisms.length;
+            document.getElementById('singleCells').textContent = stats.single;
+            document.getElementById('smallColonies').textContent = stats.small;
+            document.getElementById('mediumColonies').textContent = stats.medium;
+            document.getElementById('largeColonies').textContent = stats.large;
+            document.getElementById('avgCooperation').textContent = 
+                organisms.length > 0 ? Math.round((stats.totalCooperation / organisms.length) * 100) + '%' : '0%';
+        }
+
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Event listeners
+        document.getElementById('startBtn').addEventListener('click', () => {
+            running = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('pauseBtn').disabled = false;
+        });
+
+        document.getElementById('pauseBtn').addEventListener('click', () => {
+            running = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+        });
+
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            running = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('pauseBtn').disabled = true;
+            initSimulation();
+        });
+
+        document.getElementById('addPredatorBtn').addEventListener('click', () => {
+            for (let i = 0; i < 3; i++) {
+                predators.push(new Predator(
+                    Math.random() * canvas.width,
+                    Math.random() * canvas.height
+                ));
+            }
+        });
+
+        // Control updates
+        document.getElementById('mutationRate').addEventListener('input', (e) => {
+            mutationRate = parseFloat(e.target.value) / 100;
+            document.getElementById('mutationDisplay').textContent = e.target.value + '%';
+        });
+
+        document.getElementById('selectionPressure').addEventListener('input', (e) => {
+            selectionPressure = parseInt(e.target.value);
+            const levels = ['Very Low', 'Low', 'Low-Medium', 'Medium', 'Medium-High', 'High', 'Very High', 'Extreme', 'Maximum', 'Brutal'];
+            document.getElementById('pressureDisplay').textContent = levels[selectionPressure - 1];
+        });
+
+        document.getElementById('nutrientDensity').addEventListener('input', (e) => {
+            nutrientDensity = parseInt(e.target.value);
+            const levels = ['Scarce', 'Very Low', 'Low', 'Low-Medium', 'Medium', 'Medium-High', 'High', 'Very High', 'Abundant', 'Overflow'];
+            document.getElementById('nutrientDisplay').textContent = levels[nutrientDensity - 1];
+        });
+
+        // Initialize and start
+        initSimulation();
+        gameLoop();
+    </script>
+</body>
+</html>
