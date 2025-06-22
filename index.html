@@ -5,9 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Artificial Life Evolution Simulator</title>
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             margin: 0;
-            padding: 20px;
+            padding: 10px;
             font-family: 'Segoe UI', sans-serif;
             background: linear-gradient(135deg, #0a0a0a, #1a1a2e);
             color: #e0e0e0;
@@ -18,14 +22,14 @@
             max-width: 1400px;
             margin: 0 auto;
             display: grid;
-            grid-template-columns: 1fr 300px;
+            grid-template-columns: 1fr;
             gap: 20px;
         }
 
         .simulation-area {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
-            padding: 20px;
+            padding: 15px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
@@ -33,7 +37,7 @@
         .controls {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 15px;
-            padding: 20px;
+            padding: 15px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             height: fit-content;
@@ -41,31 +45,35 @@
 
         canvas {
             width: 100%;
-            height: 600px;
+            height: 50vh;
+            min-height: 300px;
+            max-height: 500px;
             border-radius: 10px;
             background: radial-gradient(circle at center, #001122, #000511);
             cursor: crosshair;
+            display: block;
         }
 
         h1 {
             text-align: center;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             background: linear-gradient(45deg, #64ffda, #1de9b6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            font-size: 2.5rem;
+            font-size: clamp(1.5rem, 5vw, 2.5rem);
             font-weight: 700;
+            line-height: 1.2;
         }
 
         h2 {
             color: #64ffda;
             margin-bottom: 15px;
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 3vw, 1.2rem);
         }
 
         .control-group {
-            margin-bottom: 20px;
-            padding: 15px;
+            margin-bottom: 15px;
+            padding: 12px;
             background: rgba(255, 255, 255, 0.03);
             border-radius: 8px;
             border-left: 3px solid #64ffda;
@@ -75,19 +83,25 @@
             display: block;
             margin-bottom: 5px;
             color: #b0b0b0;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
         }
 
         input[type="range"] {
             width: 100%;
             margin-bottom: 10px;
             accent-color: #64ffda;
+            height: 30px;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         button {
-            width: 100%;
-            padding: 12px;
-            margin: 5px 0;
+            padding: 12px 8px;
             background: linear-gradient(45deg, #1de9b6, #64ffda);
             border: none;
             border-radius: 8px;
@@ -97,6 +111,8 @@
             transition: all 0.3s ease;
             text-transform: uppercase;
             letter-spacing: 1px;
+            font-size: clamp(0.7rem, 2vw, 0.8rem);
+            min-height: 44px;
         }
 
         button:hover {
@@ -114,16 +130,16 @@
 
         .stats {
             background: rgba(255, 255, 255, 0.03);
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
-            margin-top: 20px;
+            margin-top: 15px;
         }
 
         .stat-item {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
-            font-size: 0.9rem;
+            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
         }
 
         .stat-value {
@@ -132,11 +148,11 @@
         }
 
         .legend {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
             margin-top: 15px;
-            padding: 15px;
+            padding: 12px;
             background: rgba(255, 255, 255, 0.03);
             border-radius: 8px;
         }
@@ -145,22 +161,129 @@
             display: flex;
             align-items: center;
             gap: 5px;
-            font-size: 0.8rem;
+            font-size: clamp(0.7rem, 2vw, 0.8rem);
         }
 
         .legend-color {
             width: 12px;
             height: 12px;
             border-radius: 50%;
+            flex-shrink: 0;
         }
 
         .info-panel {
             background: rgba(255, 255, 255, 0.03);
-            padding: 15px;
+            padding: 12px;
             border-radius: 8px;
-            margin-top: 20px;
-            font-size: 0.85rem;
+            margin-top: 15px;
+            font-size: clamp(0.75rem, 2.2vw, 0.85rem);
             line-height: 1.4;
+        }
+
+        .info-panel ul {
+            margin: 10px 0;
+            padding-left: 15px;
+        }
+
+        .info-panel li {
+            margin-bottom: 5px;
+        }
+
+        /* Tablet styles */
+        @media (min-width: 768px) {
+            body {
+                padding: 20px;
+            }
+
+            .container {
+                grid-template-columns: 1fr 350px;
+            }
+
+            canvas {
+                height: 60vh;
+                max-height: 600px;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+                gap: 5px;
+            }
+
+            button {
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Desktop styles */
+        @media (min-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr 300px;
+            }
+
+            canvas {
+                height: 600px;
+            }
+
+            .simulation-area,
+            .controls {
+                padding: 20px;
+            }
+
+            .control-group {
+                padding: 15px;
+            }
+
+            .stats,
+            .info-panel {
+                padding: 15px;
+            }
+
+            .legend {
+                padding: 15px;
+            }
+        }
+
+        /* Touch-friendly adjustments */
+        @media (pointer: coarse) {
+            input[type="range"] {
+                height: 35px;
+            }
+
+            button {
+                min-height: 48px;
+                padding: 15px 10px;
+            }
+        }
+
+        /* Very small screens */
+        @media (max-width: 480px) {
+            body {
+                padding: 5px;
+            }
+
+            .container {
+                gap: 15px;
+            }
+
+            .simulation-area,
+            .controls {
+                padding: 10px;
+            }
+
+            canvas {
+                height: 40vh;
+                min-height: 250px;
+            }
+
+            .legend {
+                grid-template-columns: 1fr 1fr;
+                gap: 5px;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+                gap: 8px;
+            }
         }
     </style>
 </head>
@@ -177,15 +300,15 @@
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #4ecdc4;"></div>
-                    <span>Small Colony (2-4 cells)</span>
+                    <span>Small Colony</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #45b7d1;"></div>
-                    <span>Medium Colony (5-10 cells)</span>
+                    <span>Medium Colony</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #96ceb4;"></div>
-                    <span>Large Colony (10+ cells)</span>
+                    <span>Large Colony</span>
                 </div>
                 <div class="legend-item">
                     <div class="legend-color" style="background: #feca57;"></div>
@@ -208,10 +331,12 @@
                 <input type="range" id="nutrientDensity" min="1" max="10" step="1" value="5">
             </div>
 
-            <button id="startBtn">▶️ Start Evolution</button>
-            <button id="pauseBtn" disabled>⏸️ Pause</button>
-            <button id="resetBtn">🔄 Reset Environment</button>
-            <button id="addPredatorBtn">🦈 Add Predator Pressure</button>
+            <div class="button-group">
+                <button id="startBtn">▶️ Start</button>
+                <button id="pauseBtn" disabled>⏸️ Pause</button>
+                <button id="resetBtn">🔄 Reset</button>
+                <button id="addPredatorBtn">🦈 Predator</button>
+            </div>
 
             <div class="stats">
                 <h2>📊 Population Stats</h2>
@@ -248,7 +373,7 @@
             <div class="info-panel">
                 <h2>ℹ️ How It Works</h2>
                 <p><strong>Evolution Mechanics:</strong></p>
-                <ul style="margin: 10px 0; padding-left: 20px;">
+                <ul>
                     <li>Organisms start as single cells</li>
                     <li>Cooperation genes allow cell clustering</li>
                     <li>Larger colonies survive predation better</li>
@@ -257,7 +382,7 @@
                 </ul>
                 
                 <p><strong>Environmental Pressures:</strong></p>
-                <ul style="margin: 10px 0; padding-left: 20px;">
+                <ul>
                     <li>Predators target single cells</li>
                     <li>Nutrient scarcity favors cooperation</li>
                     <li>Selection pressure affects survival rates</li>
@@ -265,7 +390,6 @@
             </div>
         </div>
     </div>
-
     <script>
         class Organism {
             constructor(x, y, genes = null) {
